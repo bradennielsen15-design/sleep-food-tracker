@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#070b16"/>
+  <circle cx="190" cy="210" r="110" fill="#22d3ee"/>
+  <circle cx="235" cy="185" r="95" fill="#070b16"/>
+  <path d="M300 300c-30 10-45 35-40 70 3 20 18 35 38 40 5-25 20-40 45-45-5-20-3-40 8-55-15 5-30 0-51-10z" fill="#fb923c"/>
+  <circle cx="330" cy="390" r="18" fill="#a3e635"/>
+  <text x="256" y="470" font-family="system-ui,sans-serif" font-size="28" fill="#93a4c4" text-anchor="middle">FUEL &amp; SLEEP</text>
+</svg>
