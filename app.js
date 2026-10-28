@@ -498,23 +498,23 @@
     pendingEstimate = est;
     var box = $('estimateBox');
     var known = est.known_panel === true;
-    var unc = est.uncertainty ? ('Uncertainty: ' + esc(est.uncertainty)) : 'Uncertainty: not stated by the function — treat as a rough estimate.';
+    var unc = (est.uncertainty || est.uncertainty_note) ? ('Uncertainty: ' + esc((est.uncertainty || est.uncertainty_note))) : 'Uncertainty: not stated by the function — treat as a rough estimate.';
     box.innerHTML = '<h3>AI estimate' + (known ? ' — known nutrition panel' : ' — ESTIMATE, not a verified panel') + '</h3>' +
-      '<p><strong>' + esc(est.description || 'Meal') + '</strong></p>' +
-      '<p>' + (est.calories != null ? est.calories : '—') + ' kcal · ' + (est.protein != null ? est.protein : '—') + 'P / ' + (est.carbs != null ? est.carbs : '—') + 'C / ' + (est.fat != null ? est.fat : '—') + 'F</p>' +
+      '<p><strong>' + esc((est.description || est.panel_name) || 'Meal') + '</strong></p>' +
+      '<p>' + (est.calories != null ? est.calories : '—') + ' kcal · ' + ((est.protein != null ? est.protein : est.protein_g) != null ? (est.protein != null ? est.protein : est.protein_g) : '—') + 'P / ' + ((est.carbs != null ? est.carbs : est.carbs_g) != null ? (est.carbs != null ? est.carbs : est.carbs_g) : '—') + 'C / ' + ((est.fat != null ? est.fat : est.fat_g) != null ? (est.fat != null ? est.fat : est.fat_g) : '—') + 'F</p>' +
       '<p class="muted small">' + unc + (known ? '' : ' Do not treat this as a verified panel.') + '</p>' +
       '<button class="btn" id="confirmEst">Confirm — save entry</button> ' +
       '<button class="btn ghost" id="editEst">Edit first</button>';
     box.hidden = false;
     $('confirmEst').addEventListener('click', function () {
-      addFoodEntry({ date: $('foodDate').value || todayISO(), meal: est.meal || 'snack', description: est.description || 'AI-estimated meal', calories: Number(est.calories) || 0, protein: Number(est.protein) || 0, carbs: Number(est.carbs) || 0, fat: Number(est.fat) || 0, note: known ? 'Known panel' : 'AI estimate' });
-      chatBubble('Saved: ' + (est.description || 'meal'), 'ai');
+      addFoodEntry({ date: $('foodDate').value || todayISO(), meal: est.meal || 'snack', description: (est.description || est.panel_name) || 'AI-estimated meal', calories: Number(est.calories) || 0, protein: Number((est.protein != null ? est.protein : est.protein_g)) || 0, carbs: Number((est.carbs != null ? est.carbs : est.carbs_g)) || 0, fat: Number((est.fat != null ? est.fat : est.fat_g)) || 0, note: known ? 'Known panel' : 'AI estimate' });
+      chatBubble('Saved: ' + ((est.description || est.panel_name) || 'meal'), 'ai');
       box.hidden = true; pendingEstimate = null;
     });
     $('editEst').addEventListener('click', function () {
-      $('manMeal').value = est.meal || 'snack'; $('manDesc').value = est.description || '';
-      $('manCal').value = est.calories != null ? est.calories : ''; $('manP').value = est.protein != null ? est.protein : '';
-      $('manC').value = est.carbs != null ? est.carbs : ''; $('manF').value = est.fat != null ? est.fat : '';
+      $('manMeal').value = est.meal || 'snack'; $('manDesc').value = (est.description || est.panel_name) || '';
+      $('manCal').value = est.calories != null ? est.calories : ''; $('manP').value = (est.protein != null ? est.protein : est.protein_g) != null ? (est.protein != null ? est.protein : est.protein_g) : '';
+      $('manC').value = (est.carbs != null ? est.carbs : est.carbs_g) != null ? (est.carbs != null ? est.carbs : est.carbs_g) : ''; $('manF').value = (est.fat != null ? est.fat : est.fat_g) != null ? (est.fat != null ? est.fat : est.fat_g) : '';
       document.querySelector('details.manual').open = true;
       document.querySelector('details.manual').scrollIntoView({ behavior: 'smooth' });
     });
@@ -531,8 +531,8 @@
     $('aiStatus').textContent = 'Asking AI…';
     var body = { text: text || '' };
     if (photo) {
-      body.image_base64 = String(photo.dataUrl).split(',')[1] || '';
-      body.image_mime = photo.mime;
+      body.imageBase64 = String(photo.dataUrl).split(',')[1] || '';
+      body.imageMime = photo.mime;
     }
     ensureSession().then(function () {
       return fetch(CFG.url + '/functions/v1/' + (CFG.edgeFunction || 'meal-estimate'), {
@@ -543,7 +543,7 @@
       return r.json();
     }).then(function (j) {
       var est = j.estimate || j.data || j;
-      if (est == null || (est.calories == null && !est.description)) throw new Error('empty estimate');
+      if (est == null || (est.calories == null && !(est.description || est.panel_name))) throw new Error('empty estimate');
       $('aiStatus').textContent = (est.known_panel === true) ? 'AI connected — known panel returned' : 'AI connected — estimate returned (not a verified panel)';
       chatBubble('Estimate received — review it below before saving.', 'ai');
       showEstimate(est);
