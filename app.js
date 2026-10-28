@@ -143,9 +143,9 @@
     });
   }
   // Best-effort sync: failure always falls back to localStorage, honestly badged.
-  function syncPush(table, row) {
+  function stripLocalId(row) { var clean = {}; Object.keys(row || {}).forEach(function (k) { if (k !== 'id') clean[k] = row[k]; }); return clean; } function syncPush(table, row) {
     if (!configured) return Promise.resolve(false);
-    return ensureSession().then(function () { return supaInsert(table, row); })
+    return ensureSession().then(function () { return supaInsert(table, stripLocalId(row)); })
       .then(function () { setBadge(true); return true; })
       .catch(function () { setBadge(false); return false; });
   }
@@ -277,9 +277,9 @@
     var last7 = sorted.slice(0, 7).reverse();
     $('weekChart').innerHTML = last7.length ? last7.map(function (n) {
       var h = Math.max(6, Number(n.score) || 0);
-      return '<div class="week-bar"><i style="height:' + h + 'px"></i>' + esc(n.date.slice(5)) + '<br>' + fmtNum(n.score) + '</div>';
+      return '<div class="week-bar" data-week-date="' + esc(n.date) + '"><i style="height:' + h + 'px"></i>' + esc(n.date.slice(5)) + '<br>' + fmtNum(n.score) + '</div>';
     }).join('') : '<p class="empty">No nights logged yet — the 7-night course appears here.</p>';
-    var longest = store.sleep.reduce(function (m, n) { return Math.max(m, Number(n.total_minutes) || 0); }, 0);
+    $('weekChart').querySelectorAll('[data-week-date]').forEach(function (el) { el.addEventListener('click', function () { $('sleepDate').value = el.getAttribute('data-week-date'); renderSleep(); }); }); var longest = store.sleep.reduce(function (m, n) { return Math.max(m, Number(n.total_minutes) || 0); }, 0);
     var topScore = store.sleep.reduce(function (m, n) { return Math.max(m, Number(n.score) || 0); }, 0);
     var remBest = store.sleep.reduce(function (m, n) { return Math.max(m, Number(n.rem_min) || 0); }, 0);
     $('prLongest').textContent = longest ? longest + 'm' : '—';
