@@ -1,5 +1,5 @@
 /* Sleep & Food Tracker service worker — app-shell cache only. */
-var CACHE = 'sft-v3';
+var CACHE = 'sft-v4';
 var FILES = [
   'index.html',
   'styles.css',
