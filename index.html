@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070b16">
+<meta name="description" content="Sleep & Food Tracker — a standalone, offline-first tracker for sleep, fuel, training and recovery. Empty state only: no entries until you add them.">
+<title>Sleep &amp; Food Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="logo" aria-hidden="true">☾🔥</div>
+  <div>
+    <h1>Sleep &amp; Food Tracker</h1>
+    <p class="subtitle">Fuel &amp; Sleep — empty until you log it</p>
+  </div>
+  <span id="syncBadge" class="badge">saved on this device — not synced</span>
+</header>
+
+<!-- Race HQ banner ABOVE the tabs -->
+<section id="raceHq" class="race-hq" aria-label="Race HQ">
+  <button id="raceHqToggle" class="race-hq-head" aria-expanded="false" aria-controls="raceHqBody">
+    <span class="race-flag">🏁 RACE HQ</span>
+    <span id="raceHqTitle" class="race-title">Indianapolis Monumental Marathon — Sat Nov 7, 2026, 8:00 AM</span>
+    <span id="raceHqGoal" class="race-goal">Goal: sub-3:20 (~7:38/mi) · Wave B (3:11–3:39:59)</span>
+    <span class="race-chevron" aria-hidden="true">▾</span>
+  </button>
+  <div id="raceHqBody" class="race-hq-body" hidden>
+    <div id="raceHqIndy">
+      <p><strong>Indianapolis Monumental Marathon</strong> — Sat Nov 7, 2026, 8:00 AM. Goal: sub-3:20 (~7:38/mi). Wave B (3:11–3:39:59).</p>
+      <p><strong>Expo (Indiana Convention Centre):</strong> Thu Nov 5, 4–7 PM and Fri Nov 6, 11 AM–8 PM.</p>
+      <p><strong>Course notes:</strong> gentle rise around mile 16 — hold effort, not pace; the mile 7 half-marathon split is a trap mile — don't surge as the crowd thins.</p>
+      <h3>Taper checklist</h3>
+      <ul id="raceChecklist" class="checklist"></ul>
+      <h3>Carb-load guidance (general info only, not a prescription)</h3>
+      <p>General info: many runners raise carbohydrate share in the final days before a marathon while easing training volume, and keep foods familiar — nothing new on race day. Adjust to your own plan and coach, not to this note.</p>
+      <h3>Race-morning plan</h3>
+      <ul id="raceMorningList" class="checklist"></ul>
+      <p class="muted">Hydration packs and headphones allowed; baggage check available; throwaway layers donated to charity.</p>
+    </div>
+    <div id="raceHqMuncie" hidden>
+      <p><strong>IRONMAN 70.3 Muncie, Indiana — Jul 10, 2027.</strong> This is the next Race HQ focus after the Indianapolis Monumental Marathon (Nov 7, 2026).</p>
+      <p>Training focus: winter pool swimming and indoor bike work, then a tri bike in spring and riding outside once weather allows.</p>
+    </div>
+    <p class="muted small">After Nov 7, 2026 this banner flips to IRONMAN 70.3 Muncie, Jul 10, 2027.</p>
+  </div>
+</section>
+
+<!-- Sticky tab bar: exactly two tabs -->
+<nav class="tabs" role="tablist" aria-label="Tracker sections">
+  <button id="tabSleep" class="tab tab-sleep active" role="tab" aria-selected="true" aria-controls="panelSleep">☾ Dream Lab <span>SLEEP</span></button>
+  <button id="tabFood" class="tab tab-food" role="tab" aria-selected="false" aria-controls="panelFood">🔥 Fuel Station <span>FOOD</span></button>
+</nav>
+
+<main>
+  <!-- ============ SLEEP TAB ============ -->
+  <section id="panelSleep" class="panel active" role="tabpanel" aria-labelledby="tabSleep">
+    <div class="date-row">
+      <label>Date <input type="date" id="sleepDate"></label>
+      <button id="sleepTodayBtn" class="btn small">Today</button>
+    </div>
+
+    <section class="card" aria-label="Sleep dashboard">
+      <h2>Sleep dashboard</h2>
+      <p id="sleepEmpty" class="empty">No sleep night logged for this date yet. Add one below — nothing here is sample data.</p>
+      <div class="score-row">
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle cx="60" cy="60" r="52" class="ring-bg"></circle>
+            <circle id="scoreRingFg" cx="60" cy="60" r="52" class="ring-fg"></circle>
+          </svg>
+          <div class="ring-center"><span id="scoreBig">—</span><small>score</small></div>
+        </div>
+        <div class="score-stats">
+          <div><span class="big" id="totalSleepBig">—</span><small>total asleep</small></div>
+          <div><span class="big" id="needBig">—</span><small>tonight's need</small></div>
+          <div class="times"><span id="bedWakeLine">Bedtime / wake time: not logged</span></div>
+        </div>
+      </div>
+      <h3>Night splits</h3>
+      <div id="nightSplits" class="split-bar" role="img" aria-label="Night splits: deep, light, REM, awake">
+        <div class="seg deep" id="segDeep" style="width:0%"></div>
+        <div class="seg light" id="segLight" style="width:0%"></div>
+        <div class="seg rem" id="segRem" style="width:0%"></div>
+        <div class="seg awake" id="segAwake" style="width:0%"></div>
+      </div>
+      <p id="splitLabels" class="muted small">Deep — · Light — · REM — · Awake —</p>
+      <h3>Last 7 nights (by score)</h3>
+      <div id="weekChart" class="week-chart"></div>
+      <h3>PRs</h3>
+      <div class="prs">
+        <div><span class="big" id="prLongest">—</span><small>longest night</small></div>
+        <div><span class="big" id="prScore">—</span><small>top score</small></div>
+        <div><span class="big" id="prRem">—</span><small>REM best</small></div>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Tonight's sleep plan">
+      <h2>Tonight's Sleep Plan</h2>
+      <p>Tonight's need: <strong id="tonightNeed">— minutes</strong> <span class="muted">(edit below; no fixed bedtime is prescribed anywhere in this app)</span></p>
+      <label>Tonight's need (minutes) <input type="number" id="needInput" min="0" max="900" step="5" placeholder="e.g. 480"></label>
+      <h3>90+ checklist</h3>
+      <ul class="checklist">
+        <li>Meet tonight's sleep need fully</li>
+        <li>REM 100+ minutes (protect total sleep time)</li>
+        <li>Low-stress evening — protect the wind-down, not just the volume</li>
+        <li>Hard training is fine if the wind-down holds</li>
+        <li>Avoid vigorous exercise ending close to sleep</li>
+      </ul>
+      <p class="nudge">🌙 Wind-down nudge: dim the lights, put the phone down, and keep the evening calm — the wind-down is what the good nights have in common.</p>
+      <button id="saveNeedBtn" class="btn">Save tonight's need</button>
+    </section>
+
+    <section class="card" aria-label="Training and recovery">
+      <h2>Training + Recovery</h2>
+      <div id="activityList" class="list"></div>
+      <p id="activityEmpty" class="empty">No activities logged for this date yet.</p>
+      <form id="activityForm" class="form-grid">
+        <label>Title <input id="actTitle" placeholder="e.g. Easy run"></label>
+        <label>Type <input id="actType" placeholder="run / ride / swim / strength"></label>
+        <label>Distance (km) <input id="actDist" type="number" step="0.1" min="0"></label>
+        <label>Duration (min) <input id="actDur" type="number" min="0"></label>
+        <label>Avg HR <input id="actHr" type="number" min="0"></label>
+        <label>Note <input id="actNote" placeholder="optional"></label>
+        <button class="btn" type="submit">Add activity</button>
+      </form>
+      <h3>Wellness</h3>
+      <div id="wellnessList" class="list"></div>
+      <form id="wellnessForm" class="form-grid">
+        <label>Steps <input id="wellSteps" type="number" min="0"></label>
+        <label>Note <input id="wellNote" placeholder="Body Battery, HRV, stress…"></label>
+        <button class="btn" type="submit">Add wellness row</button>
+      </form>
+    </section>
+
+    <section class="card" aria-label="Log a sleep night">
+      <h2>Log a sleep night</h2>
+      <form id="sleepForm" class="form-grid">
+        <label>Bedtime <input id="sleepBedtime" type="time"></label>
+        <label>Wake time <input id="sleepWake" type="time"></label>
+        <label>Total asleep (min) <input id="sleepTotal" type="number" min="0" max="1200"></label>
+        <label>Score (0–100) <input id="sleepScore" type="number" min="0" max="100"></label>
+        <label>Deep (min) <input id="sleepDeep" type="number" min="0"></label>
+        <label>Light (min) <input id="sleepLight" type="number" min="0"></label>
+        <label>REM (min) <input id="sleepRem" type="number" min="0"></label>
+        <label>Awake (min) <input id="sleepAwake" type="number" min="0"></label>
+        <label>Training note <input id="sleepNote" placeholder="optional"></label>
+        <button class="btn" type="submit">Save sleep night</button>
+      </form>
+    </section>
+  </section>
+
+  <!-- ============ FOOD TAB ============ -->
+  <section id="panelFood" class="panel" role="tabpanel" aria-labelledby="tabFood" hidden>
+    <div class="date-row">
+      <label>Date <input type="date" id="foodDate"></label>
+      <button id="foodTodayBtn" class="btn small">Today</button>
+    </div>
+
+    <!-- Prominent camera capture -->
+    <section class="card camera-card" aria-label="Meal photo capture">
+      <h2>📸 Capture a meal</h2>
+      <p class="muted">Take a photo of your meal, or pick one from your files. Preview it, then send it to the AI agent below.</p>
+      <label class="camera-btn" for="mealPhoto">📷 Take / choose meal photo</label>
+      <input type="file" id="mealPhoto" accept="image/*" capture="environment" hidden>
+      <div id="mealPreviewWrap" hidden>
+        <img id="mealPreview" alt="Meal photo preview">
+        <p class="muted small">Photo stays on this device until you tap “Ask AI” — nothing is uploaded automatically.</p>
+        <button id="sendPhotoToAi" class="btn">Send photo to AI agent ↓</button>
+        <button id="clearPhotoBtn" class="btn ghost">Remove photo</button>
+      </div>
+    </section>
+
+    <!-- 1. Calories tracker -->
+    <section class="card" aria-label="Calories tracker">
+      <h2>Calories tracker</h2>
+      <div class="cal-row">
+        <div><span class="big" id="calEaten">—</span><small>eaten (kcal)</small></div>
+        <div><span class="big" id="calTarget">—</span><small>target (kcal)</small></div>
+        <div><span class="big" id="calLeft">—</span><small>remaining</small></div>
+      </div>
+      <p class="muted small" id="targetNote">Target = today's burn when known, else 3200 kcal. Protein 160g · Fat 90g · Carbs from remainder.</p>
+      <div class="macro-grid">
+        <div>Protein <strong id="macroP">—</strong> <span id="pctP" class="pct">—</span></div>
+        <div>Carbs <strong id="macroC">—</strong> <span id="pctC" class="pct">—</span></div>
+        <div>Fat <strong id="macroF">—</strong> <span id="pctF" class="pct">—</span></div>
+      </div>
+      <h3>Calorie split</h3>
+      <div id="calSplit" class="split-bar">
+        <div class="seg protein" id="splitP" style="width:0%"></div>
+        <div class="seg carbs" id="splitC" style="width:0%"></div>
+        <div class="seg fat" id="splitF" style="width:0%"></div>
+      </div>
+      <p id="splitPct" class="muted small">—</p>
+    </section>
+
+    <!-- 2. Eaten-food list -->
+    <section class="card" aria-label="Eaten food">
+      <h2>Eaten food — selected day</h2>
+      <div id="foodList" class="list"></div>
+      <p id="foodEmpty" class="empty">Nothing logged for this day yet. Add a favorite, use the manual form, or ask the AI agent.</p>
+    </section>
+
+    <!-- 3. What should I eat next -->
+    <section class="card" aria-label="What should I eat next">
+      <h2>What should I eat next?</h2>
+      <div id="eatNext" class="eat-next"></div>
+      <p class="muted small">Suggestions come only from your remaining macros for today — they are ideas, not a prescription.</p>
+    </section>
+
+    <!-- 4. One-tap favorites -->
+    <section class="card" aria-label="One-tap favorites">
+      <h2>One-tap favorites</h2>
+      <p class="muted small">Generic reference items (not your logged history). Tap to add to today, or edit first.</p>
+      <div id="favList" class="list"></div>
+      <form id="favForm" class="form-grid">
+        <label>Name <input id="favName" placeholder="e.g. Greek yogurt bowl"></label>
+        <label>Meal <input id="favMeal" placeholder="breakfast / lunch / dinner / snack"></label>
+        <label>Description <input id="favDesc" placeholder="optional"></label>
+        <label>Calories <input id="favCal" type="number" min="0"></label>
+        <label>Protein (g) <input id="favP" type="number" step="0.5" min="0"></label>
+        <label>Carbs (g) <input id="favC" type="number" step="0.5" min="0"></label>
+        <label>Fat (g) <input id="favF" type="number" step="0.5" min="0"></label>
+        <button class="btn" type="submit">Save favorite</button>
+      </form>
+    </section>
+
+    <!-- 5. Photo-log explainer -->
+    <section class="card" aria-label="Photo logging">
+      <h2>Photo logging, how it works</h2>
+      <p>1) Capture a meal photo above. 2) Tap “Ask AI” in the chat below — the photo is sent to the meal-estimate function, which returns an estimate with its uncertainty shown plainly. 3) Review it: Confirm saves it, Edit lets you change the numbers first. Estimates are never shown as verified nutrition panels unless the function says the panel is known.</p>
+    </section>
+
+    <!-- AI agent chat -->
+    <section class="card ai-card" aria-label="AI agent chat">
+      <h2>🤖 AI meal agent</h2>
+      <p id="aiStatus" class="muted small">Checking AI connection…</p>
+      <div id="chatLog" class="chat-log" aria-live="polite"></div>
+      <form id="chatForm" class="chat-form">
+        <label class="sr-only" for="chatInput">What did you eat?</label>
+        <input id="chatInput" placeholder='What did you eat? e.g. "2 eggs and toast"'>
+        <button class="btn" type="submit">Ask AI</button>
+      </form>
+      <div id="estimateBox" class="estimate" hidden></div>
+      <details class="manual">
+        <summary>Enter macros manually instead</summary>
+        <form id="manualForm" class="form-grid">
+          <label>Meal <input id="manMeal" placeholder="breakfast / lunch / dinner / snack"></label>
+          <label>Description <input id="manDesc" placeholder="What did you eat?"></label>
+          <label>Calories <input id="manCal" type="number" min="0"></label>
+          <label>Protein (g) <input id="manP" type="number" step="0.5" min="0"></label>
+          <label>Carbs (g) <input id="manC" type="number" step="0.5" min="0"></label>
+          <label>Fat (g) <input id="manF" type="number" step="0.5" min="0"></label>
+          <label>Note <input id="manNote" placeholder="optional"></label>
+          <button class="btn" type="submit">Add food entry</button>
+        </form>
+      </details>
+    </section>
+
+    <!-- 6. Fuel vs Burn -->
+    <section class="card" aria-label="Fuel versus burn">
+      <h2>Fuel vs Burn</h2>
+      <p>Eaten: <strong id="fuelEaten">—</strong> · Burn: <strong id="fuelBurn">—</strong> · Balance: <strong id="fuelBalance">—</strong></p>
+      <p id="burnNote" class="muted">Burn not synced for this day — enter it below, or leave it blank and targets fall back to 3200 kcal.</p>
+      <form id="burnForm" class="form-grid">
+        <label>Today's burn (kcal) <input id="burnKcal" type="number" min="0"></label>
+        <button class="btn" type="submit">Save burn</button>
+      </form>
+    </section>
+
+    <!-- 7. Grocery list -->
+    <section class="card" aria-label="Grocery list">
+      <h2>Grocery list</h2>
+      <p>Budget target: <strong id="groceryTarget">—</strong> · Spent (manual): <strong id="grocerySpent">—</strong> · Remaining: <strong id="groceryLeft">—</strong></p>
+      <p class="muted small">No prices are invented here — enter your own spent total. Items have no prices unless you add them as notes.</p>
+      <form id="groceryTargetForm" class="form-grid">
+        <label>Budget target ($) <input id="groceryTargetInput" type="number" step="0.01" min="0"></label>
+        <label>Spent so far ($) <input id="grocerySpentInput" type="number" step="0.01" min="0"></label>
+        <button class="btn" type="submit">Save budget</button>
+      </form>
+      <div id="groceryList" class="list"></div>
+      <form id="groceryForm" class="form-grid">
+        <label>Item <input id="grocName" placeholder="e.g. Oats"></label>
+        <label>Qty <input id="grocQty" placeholder="e.g. 1 bag"></label>
+        <button class="btn" type="submit">Add item</button>
+      </form>
+    </section>
+
+    <!-- 8. Weight trend -->
+    <section class="card" aria-label="Weight trend">
+      <h2>Weight trend</h2>
+      <p class="muted small">Your entries only — no weight is shown until you add one.</p>
+      <div id="weightList" class="list"></div>
+      <form id="weightForm" class="form-grid">
+        <label>Weight (lbs) <input id="weightLbs" type="number" step="0.1" min="0"></label>
+        <label>Note <input id="weightNote" placeholder="optional"></label>
+        <button class="btn" type="submit">Add weigh-in</button>
+      </form>
+    </section>
+  </section>
+</main>
+
+<footer class="footer">
+  <p>Standalone PWA · Works offline · Data stays on this device unless Supabase sync is configured. No fixed bedtime is prescribed. Estimates from the AI agent are estimates, not verified panels, unless marked known.</p>
+</footer>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+</script>
+</body>
+</html>
