@@ -143,9 +143,9 @@
     });
   }
   // Best-effort sync: failure always falls back to localStorage, honestly badged.
-  function stripLocalId(row) { var clean = {}; Object.keys(row || {}).forEach(function (k) { if (k !== 'id') clean[k] = row[k]; }); return clean; } function syncPush(table, row) {
+  function stripLocalId(row) { var clean = {}; Object.keys(row || {}).forEach(function (k) { if (k !== 'id') clean[k] = row[k]; }); return clean; } var UPSERT_CONFLICT = {'sft_sleep_nights':'user_id,date','sft_daily_burn':'user_id,date','sft_settings':'user_id'}; function supaUpsert(table, row, conflict) { if (!session || !session.user_id) return Promise.reject(new Error('no user')); row.user_id = session.user_id; return fetch(CFG.url+'/rest/v1/'+table+'?on_conflict='+conflict, {method:'POST', headers:supaHeaders({'Prefer':'return=representation,resolution=merge-duplicates'}), body:JSON.stringify(row)}).then(function(r){if(!r.ok)throw new Error(table+' upsert '+r.status); return r.json();});} function syncPush(table, row) {
     if (!configured) return Promise.resolve(false);
-    return ensureSession().then(function () { return supaInsert(table, stripLocalId(row)); })
+    return ensureSession().then(function () { var clean = stripLocalId(row); return UPSERT_CONFLICT[table] ? supaUpsert(table, clean, UPSERT_CONFLICT[table]) : supaInsert(table, clean); })
       .then(function () { setBadge(true); return true; })
       .catch(function () { setBadge(false); return false; });
   }
