@@ -557,13 +557,13 @@
     $('chatInput').value = '';
   });
 
-  /* ---------- Init ---------- */
+  /* Pull database favorites on init: database values win on a name      conflict, local-only favorites are preserved, and pulled favorites      keep a usable local id so they can be logged with + Add. App deletes      are intentionally not matched back to database rows. */   function pullFavoritesFromDb() {     if (!configured) return Promise.resolve();     return supaGet('sft_favorites', 'select=*&user_id=eq.' + encodeURIComponent(session && session.user_id ? session.user_id : '') + '&order=name')       .then(function (rows) {         var byName = {};         store.favorites.forEach(function (f) { if (f && f.name) byName[String(f.name).trim().toLowerCase()] = f; });         (rows || []).forEach(function (r) {           if (!r || !r.name) return;           var pulled = { id: r.id || uid(), name: r.name, meal: r.meal, description: r.description || '', calories: Number(r.calories) || 0, protein: Number(r.protein) || 0, carbs: Number(r.carbs) || 0, fat: Number(r.fat) || 0, note: r.note || '' };           var key = String(r.name).trim().toLowerCase();           var existing = byName[key];           if (existing) { Object.keys(pulled).forEach(function (k) { existing[k] = pulled[k]; }); }           else { store.favorites.push(pulled); byName[key] = pulled; }         });         saveStore(); renderFood();       })       .catch(function () {});   }   /* ---------- Init ---------- */
   setBadge(false);
   renderRaceHq();
   renderSleep();
   renderFood();
   if (configured) {
-    ensureSession().then(function () { setBadge(true); }).catch(function () { setBadge(false); $('aiStatus').textContent = 'AI not connected yet — enter macros manually'; });
+    ensureSession().then(function () { setBadge(true); pullFavoritesFromDb(); }).catch(function () { setBadge(false); $('aiStatus').textContent = 'AI not connected yet — enter macros manually'; });
   } else {
     $('aiStatus').textContent = 'AI not connected yet — enter macros manually';
   }
